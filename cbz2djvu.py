@@ -11,7 +11,7 @@ parser.add_argument('--detectTOC', help ='attempt to detect volumes and chapters
 parser.add_argument('--justTOC', help ='attempt to add TOC to already existing books', action="store_true")
 args = parser.parse_args()
 
-FILENAME = args.filename
+FILENAME = s_sub(args.filename, '.cbz')
 CLEAN = not args.nocleanup
 if args.justTOC:
 	CLEAN = False
