@@ -36,4 +36,5 @@ type `python3 cbz2djvu.py -h` and experiment with flags
   2. Read what the errors say
   3. Can't help you much more unfortunately, but there are links for documentation of tools used in the script:
   https://linux.die.net/man/1/djvu
+  
   https://linux.die.net/man/1/unzip
