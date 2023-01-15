@@ -32,7 +32,7 @@ A tool to convert CBZ comics to DJVU books for better reading experience on elec
 type `python3 cbz2djvu.py -h` and experiment with flags
 
 # If something went wrong and errors are being spitted out
-  1. Kill the program (unfortunately it is not responsive for ^C, so you'd need to use htop or any other tool)
+  1. Kill the program (unfortunately it is not responsive to ^C, so you'd need to use htop or any other tool)
   2. Read what the errors say
   3. Can't help you much more unfortunately, but there are links for documentation of tools used in the script:
   
