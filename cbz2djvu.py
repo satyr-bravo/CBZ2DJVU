@@ -3,6 +3,11 @@ import shutil
 import argparse
 import subprocess
 
+def s_sub(s1, s2):
+	return s1.replace(s2,'')
+def es(s):
+	return s.replace(' ','\ ')
+
 parser = argparse.ArgumentParser(description='Hopefully converts CBZ files to djvu')
 parser.add_argument('filename', help='cbz file you want to process')
 parser.add_argument('--dpi', type=int)
@@ -38,10 +43,6 @@ for d in DEPS:
 		exit()
 print("All dependencies checked, should be ok to proceed")
 
-def s_sub(s1, s2):
-	return s1.replace(s2,'')
-def es(s):
-	return s.replace(' ','\ ')
 
 if CLEAN:
 	shutil.rmtree(T_DIR, ignore_errors = True)
