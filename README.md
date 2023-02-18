@@ -1,19 +1,16 @@
 # CBZ2DJVU
-A tool to convert CBZ comics to DJVU books for better reading experience on electronic books and smartphones
+A tool to convert CBZ comics to DJVU books for better reading experience on e-readers
 
 [Take me to installation](#installation)
 
 ## Features
-- Hopefully painless conversion 
-- Can auto-detect volumes and chapters structure and write them as a table of contents (disabled by default since results are often messy, see advanced usage)
+- Three modes of conversion: color, grayscale and b&w
+- Can auto-detect volumes and chapters structure and write them as a table of contents (disabled by default, see [advanced usage](#advanced-usage))
 - Allows adjustment of DPI for converted document
 - May serve as a replacement for my old Manga2Djvu project
-- Since compression is used, greatly reduces file size and hence, responsiveness while reading
 
 ## Anti-features
 - Linux (and maybe bsd?) only
-- Currently allows only black-and-white output
-- May compress images
 - Ungodly slow
 - Does not clean up after itself
 
@@ -24,12 +21,22 @@ A tool to convert CBZ comics to DJVU books for better reading experience on elec
 ## Usage
 1. Place your .cbz book into the folder you placed cbz2djvu script
 2. Make sure you have at least twice as much free space on your drive as your .cbz file takes, because this program creates a lot of temporary files
-3. Start the script by typing `./cbz2djvu.py FILENAME` into the terminal
-4. Wait for a very long time (can take up to 30 minutes for 2GB .cbz file), until the program prints "Done!" and exits
+3. Start the script by typing `./cbz2djvu.py FILENAME` into the terminal (color mode is assumed by default, see [advanced usage](#advanced-usage))
+4. Wait for a very long time (can take up to 45 minutes), until the program prints "Done!" and exits
 5. FILENAME.djvu will be your converted comic, you can delete everything else if not needed
 
 ## Advanced usage
-type `./cbz2djvu.py -h` and experiment with flags
+|Flag           | What for                                                                                                          |
+|---------------|-------------------------------------------------------------------------------------------------------------------|
+|`-h`           | Displays help message                                                                                             |
+|`--dpi=DPI`    | Set DPI value for a final document                                                                                |
+|`--gs`         | Set document conversion mode to grayscale                                                                         |
+|`--bw`         | Set document conversion mode to black&white                                                                       |
+|`--detectTOC`  | Guess table of contents from the folder structure (very unstable, likely to crash, better to use "justTOC" flag)  |
+|`--justTOC`    | Guess table of contents and append it to the already made file without re-generating it                           |
+|`--nocleanup`  | Do not delete files from previous runs (likely to mess things up, use at your own risk)                           |
+
+           
 
 # If something went wrong and errors are being spitted out
   1. Kill the program (unfortunately it is not responsive to ^C, so you'd need to use htop or any other tool)
