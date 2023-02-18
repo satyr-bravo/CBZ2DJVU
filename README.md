@@ -24,12 +24,12 @@ A tool to convert CBZ comics to DJVU books for better reading experience on elec
 ## Usage
 1. Place your .cbz book into the folder you placed cbz2djvu script
 2. Make sure you have at least twice as much free space on your drive as your .cbz file takes, because this program creates a lot of temporary files
-3. Start the script by typing `python3 cbz2djvu.py FILENAME` into the terminal
+3. Start the script by typing `./cbz2djvu.py FILENAME` into the terminal
 4. Wait for a very long time (can take up to 30 minutes for 2GB .cbz file), until the program prints "Done!" and exits
 5. FILENAME.djvu will be your converted comic, you can delete everything else if not needed
 
 ## Advanced usage
-type `python3 cbz2djvu.py -h` and experiment with flags
+type `./cbz2djvu.py -h` and experiment with flags
 
 # If something went wrong and errors are being spitted out
   1. Kill the program (unfortunately it is not responsive to ^C, so you'd need to use htop or any other tool)
