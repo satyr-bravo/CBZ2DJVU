@@ -1,12 +1,9 @@
+#!/usr/bin/python3
 import os
 import shutil
 import argparse
 import subprocess
-
-def s_sub(s1, s2):
-	return s1.replace(s2,'')
-def es(s):
-	return s.replace(' ','\ ')
+import re
 
 parser = argparse.ArgumentParser(description='Hopefully converts CBZ files to djvu')
 parser.add_argument('filename', help='cbz file you want to process')
@@ -15,6 +12,29 @@ parser.add_argument('--nocleanup', help ='disable file removal from previous run
 parser.add_argument('--detectTOC', help ='attempt to detect volumes and chapters', action="store_true")
 parser.add_argument('--justTOC', help ='attempt to add TOC to already existing books', action="store_true")
 args = parser.parse_args()
+
+def drawProgressBar(cur, max, task = ''):
+    rat = cur/max
+    col = os.get_terminal_size().columns
+    bar_size = col - len(task) - len(str(max))*2 - 6 - 8 - 1
+    print(f'{task}[{("="*int(rat*bar_size))}{" "*int((1-rat)*bar_size)}] | {cur}/{max} | {round(100*rat,2)}%', end="\r", flush=True)
+
+def s_sub(s1, s2):
+	return s1.replace(s2,'')
+def es(s):
+	return s.replace(' ','\ ')
+
+def tryint(s):
+    try:
+        return int(s)
+    except:
+        return s
+
+def alphanum_key(s):
+    return [ tryint(c) for c in re.split('([0-9]+)', s) ]
+
+def sort_nicely(l):
+    l.sort(key=alphanum_key)
 
 FILENAME = s_sub(args.filename, '.cbz')
 CLEAN = not args.nocleanup
@@ -43,12 +63,13 @@ for d in DEPS:
 		exit()
 print("All dependencies checked, should be ok to proceed")
 
-
 if CLEAN:
 	shutil.rmtree(T_DIR, ignore_errors = True)
 	os.mkdir(T_DIR)
 	print("temp directory created")
-	os.system(f"unzip {FILENAME}.cbz -d {T_DIR}")
+	print("Extracting file...")
+	os.system(f"unzip -qq {FILENAME}.cbz -d {T_DIR}")
+	print("Extracted")
 	if os.path.exists(f"{T_DIR}/pbms"):
 		shutil.rmtree(f"{T_DIR}/pbms")
 	os.mkdir(f"{T_DIR}/pbms")
@@ -58,7 +79,9 @@ for dirname, dirnames, filenames in os.walk(T_DIR):
 		dirnames.remove('pbms')
 	for filename in filenames:
 		PAGES_LIST.append(os.path.join(dirname, filename))		
-PAGES_LIST = sorted(PAGES_LIST)
+sort_nicely(PAGES_LIST)
+print("\n".join(PAGES_LIST), file = open("help.txt",'w'))
+
 if args.detectTOC or args.justTOC:
 	TABLE = {}
 	for pgi in range(len(PAGES_LIST)):
@@ -104,7 +127,7 @@ if not args.justTOC:
 		os.system(f"cjb2 -clean -dpi {DPI} {T_DIR}/pbms/{pi}.pbm {T_DIR}/pbms/{pi}.djvu")
 		if CLEAN or not os.path.exists(f'{W_DIR}/{FILENAME}.djvu'):
 			os.system(f"djvm -i {W_DIR}/{FILENAME}.djvu {T_DIR}/pbms/{pi}.djvu")
-		print(f"Making page {pi+1}")
+		drawProgressBar(pi, len(PAGES_LIST), "Converting pages ")
 if args.detectTOC or args.justTOC:
 	os.system(f'djvused {W_DIR}/{FILENAME}.djvu -e "set-outline TOC.txt" -s')
 
