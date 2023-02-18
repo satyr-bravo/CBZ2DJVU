@@ -4,35 +4,30 @@ import shutil
 import argparse
 import subprocess
 import re
-import time
 
 parser = argparse.ArgumentParser(
     description='Hopefully converts CBZ files to djvu')
 parser.add_argument('filename', help='cbz file you want to process')
 parser.add_argument('--dpi', type=int)
 parser.add_argument(
-    '--nocleanup', help='disable file removal from previous runs', action="store_true")
+    '--gs', help='Convert all images to grayscale for smaller file size', action="store_true")    
+parser.add_argument(
+    '--bw', help='Convert all images to b&w bitmap for smallest file size', action="store_true")
 parser.add_argument(
     '--detectTOC', help='attempt to detect volumes and chapters', action="store_true")
+parser.add_argument(
+    '--nocleanup', help='disable file removal from previous runs', action="store_true")
 parser.add_argument(
     '--justTOC', help='attempt to add TOC to already existing books', action="store_true")
 args = parser.parse_args()
 
 
-def drawProgressBar(cur, max, task='', ETA=0):
+def drawProgressBar(cur, max, task=''):
     rat = cur/max
     col = os.get_terminal_size().columns
     bar_size = col - len(task) - len(str(max))*2 - 16
-    if (ETA != 0):
-        bar_size -= 16
-        a = bar_size - int(bar_size * rat)
-        b = int(bar_size * rat)
-        est_time = time.strftime("%H:%M:%S", time.gmtime(ETA))
-        print(
-            f'{task}[{("="*b)}{" "*a}] | {cur}/{max} | {100*rat:.2f}% | ETA: {est_time}', end="\r", flush=True)
-    else:
-        print(
-            f'{task}[{("="*int(rat*bar_size))}{" "*int((1-rat)*bar_size)}] | {cur}/{max} | {100*rat:.2f}%', end="\r", flush=True)
+    print(
+        f'{task}[{("="*int(rat*bar_size))}{" "*int((1-rat)*bar_size)}] | {cur}/{max} | {100*rat:.2f}%', end="\r", flush=True)
 
 
 def s_sub(s1, s2):
@@ -63,6 +58,21 @@ CLEAN = not args.nocleanup
 if args.justTOC:
     CLEAN = False
 
+if args.bw and args.gs:
+    print("B&w and grayscale conversion modes are mutually exclusive, please set flags properly")
+    exit() 
+
+if args.bw:
+    form = 'pbm'
+    tool = 'cjb2 -clean'
+elif args.gs:
+    form =  'pgm'
+    tool = 'c44'
+else:
+    form = 'ppm'
+    tool = 'c44'
+
+
 if (args.dpi == None):
     DPI = 212
 else:
@@ -74,7 +84,7 @@ if not CLEAN:
     print("Cleanup disabled. This may lead to unpredicted errors")
 W_DIR = os.getcwd()
 T_DIR = W_DIR + "/temp"
-DEPS = ['convert', 'djvm', 'cjb2', 'unzip']
+DEPS = ['convert', 'djvm', 'cjb2', 'unzip', 'c44']
 PAGES_LIST = []
 PBMS_LIST = []
 
@@ -135,29 +145,27 @@ if not args.justTOC:
     if os.path.exists(f"{T_DIR}/pbms/{pi}.djvu"):
         print(f"page {pi} already exists, skipping...")
     else:
-        os.system(f"convert {es(page)} {T_DIR}/pbms/{pi}.pbm")
+        os.system(f"convert {es(page)} {T_DIR}/pbms/{pi}.{form}")
         os.system(
-            f"cjb2 -clean -dpi {DPI} {T_DIR}/pbms/{pi}.pbm {T_DIR}/pbms/{pi}.djvu")
+            f"{tool} -dpi {DPI} {T_DIR}/pbms/{pi}.{form} {T_DIR}/pbms/{pi}.djvu")
     if CLEAN or not os.path.exists(f'{W_DIR}/{FILENAME}.djvu'):
         os.system(f"djvm -c {W_DIR}/{FILENAME}.djvu {T_DIR}/pbms/{pi}.djvu")
-        t_start = time.time()
         mx = len(PAGES_LIST)
     for pi in range(1, len(PAGES_LIST)):
         page = PAGES_LIST[pi]
-        if os.path.exists(f"{T_DIR}/pbms/{pi}.pbm"):
+        if os.path.exists(f"{T_DIR}/pbms/{pi}.{form}"):
             print(f"page {pi} already exists, skipping...")
             os.system(
                 f"djvm -i {W_DIR}/{FILENAME}.djvu {T_DIR}/pbms/{pi}.djvu")
             continue
-        os.system(f"convert {es(page)} {T_DIR}/pbms/{pi}.pbm")
+        os.system(f"convert {es(page)} {T_DIR}/pbms/{pi}.{form}")
         os.system(
-            f"cjb2 -clean -dpi {DPI} {T_DIR}/pbms/{pi}.pbm {T_DIR}/pbms/{pi}.djvu")
+            f"{tool} -dpi {DPI} {T_DIR}/pbms/{pi}.{form} {T_DIR}/pbms/{pi}.djvu")
         if CLEAN or not os.path.exists(f'{W_DIR}/{FILENAME}.djvu'):
             os.system(
                 f"djvm -i {W_DIR}/{FILENAME}.djvu {T_DIR}/pbms/{pi}.djvu")
 
-        drawProgressBar(pi, mx, "Converting pages ", (mx-pi)
-                        * pi * (time.time() - t_start))
+        drawProgressBar(pi, mx, "Converting pages ")
 if args.detectTOC or args.justTOC:
     os.system(f'djvused {W_DIR}/{FILENAME}.djvu -e "set-outline TOC.txt" -s')
 print('\n')

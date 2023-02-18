@@ -30,15 +30,19 @@ A tool to convert CBZ comics to DJVU books for better reading experience on e-re
 |---------------|-------------------------------------------------------------------------------------------------------------------|
 |`-h`           | Displays help message                                                                                             |
 |`--dpi=DPI`    | Set DPI value for a final document                                                                                |
-|`--gs`         | Set document conversion mode to grayscale                                                                         |
-|`--bw`         | Set document conversion mode to black&white                                                                       |
+|`--gs`         | Set document conversion mode to grayscale for smaller file size                                                   |
+|`--bw`         | Set document conversion mode to black&white for smallest possible file size                                       |
 |`--detectTOC`  | Guess table of contents from the folder structure (very unstable, likely to crash, better to use "justTOC" flag)  |
 |`--justTOC`    | Guess table of contents and append it to the already made file without re-generating it                           |
 |`--nocleanup`  | Do not delete files from previous runs (likely to mess things up, use at your own risk)                           |
 
-           
+## TODO
+1. Improve table of contents detection 
+2. Somehow increase program's speed (maybe multi-threading would help?)
+3. Iron out UI and small bugs (just for satisfaction, it's not like anybody is going to use the thing)
 
-# If something went wrong and errors are being spitted out
+
+# If something went wrong and errors are being spit out
   1. Kill the program (unfortunately it is not responsive to ^C, so you'd need to use htop or any other tool)
   2. Read what the errors say
   3. Can't help you much more unfortunately, but there are links for documentation of tools used in the script:
