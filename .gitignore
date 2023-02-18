@@ -4,3 +4,5 @@ TOC.txt
 temp
 *.cbz
 *.djvu
+.vscode
+.gitignore

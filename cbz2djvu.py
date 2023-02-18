@@ -26,8 +26,10 @@ def drawProgressBar(cur, max, task=''):
     rat = cur/max
     col = os.get_terminal_size().columns
     bar_size = col - len(task) - len(str(max))*2 - 16
+    b = int(bar_size * rat)
+    a = bar_size - b
     print(
-        f'{task}[{("="*int(rat*bar_size))}{" "*int((1-rat)*bar_size)}] | {cur}/{max} | {100*rat:.2f}%', end="\r", flush=True)
+        f'{task}[{("="*b)}{" "*a}] | {cur}/{max} | {100*rat:.2f}%', end="\r", flush=True)
 
 
 def s_sub(s1, s2):
@@ -139,6 +141,8 @@ if args.detectTOC or args.justTOC:
         toc.write('\t)\n')
     toc.write(')')
     toc.close()
+
+
 if not args.justTOC:
     pi = 0
     page = PAGES_LIST[pi]
@@ -164,9 +168,12 @@ if not args.justTOC:
         if CLEAN or not os.path.exists(f'{W_DIR}/{FILENAME}.djvu'):
             os.system(
                 f"djvm -i {W_DIR}/{FILENAME}.djvu {T_DIR}/pbms/{pi}.djvu")
-
         drawProgressBar(pi, mx, "Converting pages ")
+
+
 if args.detectTOC or args.justTOC:
     os.system(f'djvused {W_DIR}/{FILENAME}.djvu -e "set-outline TOC.txt" -s')
+
+
 print('\n')
 print("Done!")

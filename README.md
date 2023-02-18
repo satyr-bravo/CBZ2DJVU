@@ -4,7 +4,10 @@ A tool to convert CBZ comics to DJVU books for better reading experience on e-re
 [Take me to installation](#installation)
 
 ## Features
-- Three modes of conversion: color, grayscale and b&w
+- Three modes of conversion: 
+    - color - ~75% the size of CBZ (on average)
+    - grayscale - ~60% 
+    - b&w - ~10% 
 - Can auto-detect volumes and chapters structure and write them as a table of contents (disabled by default, see [advanced usage](#advanced-usage))
 - Allows adjustment of DPI for converted document
 - May serve as a replacement for my old Manga2Djvu project
