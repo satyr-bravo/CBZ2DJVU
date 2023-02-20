@@ -49,11 +49,16 @@ def sort_nicely(l): #Sort a list of filenames in a human way
             return s
     def alphanum_key(s):
         return [tryint(c) for c in re.split('([0-9]+)', s)]
-
     l.sort(key=alphanum_key)
 
+def contains_any(str1, list1): #check if a string contains any words from a given list
+    for i in list1:
+        if i in str1.lower():
+            return True
+    return False
+
 #Parsing arguments and setting variables accordingly
-FILENAME = s_sub(args.filename, '.cbz')
+FILENAME = es(s_sub(args.filename, '.cbz'))
 
 CLEAN = not args.nocleanup
 CLEAN_AFT =  args.cleanafter
@@ -92,6 +97,8 @@ if not CLEAN:
 W_DIR = os.getcwd()
 T_DIR = W_DIR + "/temp"
 DEPS = ['convert', 'djvm', 'cjb2', 'unzip', 'c44']
+VOL_NAMES = ["volume", "vol"]
+CH_NAMES = ["chapter", "ch"]
 PAGES_LIST = []
 PBMS_LIST = []
 
@@ -128,30 +135,54 @@ sort_nicely(PAGES_LIST)
 #Detecting and generating table of contents
 if args.detectTOC or args.justTOC:
     TABLE = {}
-    for pgi in range(len(PAGES_LIST)):
-        pgid = s_sub(PAGES_LIST[pgi], T_DIR).split("/")
-        for pt in pgid:
-            if ("Vol" in pt) or ("Том" in pt) and not (("Ch" in pt) or ("Глава" in pt)):
-                vol = pt
-            if ("Ch" in pt) or ("Глава" in pt):
-                ch = pt
-        if vol not in TABLE.keys():
-            TABLE[vol] = {}
+    has_volumes = contains_any(PAGES_LIST[0], VOL_NAMES)
+    has_chapters = contains_any(PAGES_LIST[0], CH_NAMES)
+    for pgi in range(len(PAGES_LIST)):  
+        if not(has_volumes or has_chapters):
+            print("Unable to understand table of contents, sorry :(")
+            print("Launch the program again without TOC detection flag, please. Now exiting...")
+            exit()
+        elif has_volumes and has_chapters:
+            pgid = s_sub(PAGES_LIST[pgi], T_DIR).split("/")
+            for pt in pgid:
+                if contains_any(pt, VOL_NAMES) and not contains_any(pt, CH_NAMES):
+                    vol = pt
+                if contains_any(pt, CH_NAMES):
+                    ch = pt
+            if vol not in TABLE.keys():
+                TABLE[vol] = {}
+            else:
+                if ch not in TABLE[vol].keys():
+                    TABLE[vol][ch] = pgi
+            drawProgressBar(pgi, len(PAGES_LIST), "Generating TOC ")
+        elif has_volumes:
+            pgid = s_sub(PAGES_LIST[pgi], T_DIR).split("/")
+            for pt in pgid:
+                if contains_any(pt, VOL_NAMES) and (pt not in TABLE.keys()):
+                    TABLE[pt] = pgi
+        elif has_chapters:
+            pgid = s_sub(PAGES_LIST[pgi], T_DIR).split("/")
+            for pt in pgid:
+                if contains_any(pt, CH_NAMES) and (pt not in TABLE.keys()):
+                    TABLE[pt] = pgi
+        
+        if not(has_volumes and has_chapters):
+            pass
         else:
-            if ch not in TABLE[vol].keys():
-                TABLE[vol][ch] = pgi
-        drawProgressBar(pgi, len(PAGES_LIST), "Generating TOC ")
-    os.system("touch TOC.txt")
-    toc = open("TOC.txt", 'w')
-    toc.write("(bookmarks\n")
-
-    for vol in TABLE.keys():
-        toc.write(f'\t("{vol}" "#{TABLE[vol][list(TABLE[vol].keys())[0]]}"\n')
-        for ch in TABLE[vol].keys():
-            toc.write(f'\t\t("{ch}" "#{TABLE[vol][ch]}")\n')
-        toc.write('\t)\n')
-    toc.write(')')
-    toc.close()
+            os.system("touch TOC.txt")
+            toc = open("TOC.txt", 'w')
+            toc.write("(bookmarks\n")
+            if has_volumes and has_chapters:
+                for vol in TABLE.keys():
+                    toc.write(f'\t("{vol}" "#{TABLE[vol][list(TABLE[vol].keys())[0]]}"\n')
+                    for ch in TABLE[vol].keys():
+                        toc.write(f'\t\t("{ch}" "#{TABLE[vol][ch]}")\n')
+                    toc.write('\t)\n')
+            elif has_volumes or has_chapters:
+                for ps in TABLE.keys():
+                    toc.write(f'\t("{ps}" "{TABLE[ps]}")\n')
+            toc.write(')')
+            toc.close()
 
 #Main conversion cycle
 mx = len(PAGES_LIST)
@@ -161,7 +192,7 @@ if not args.justTOC:
     if os.path.exists(f"{T_DIR}/pbms/{pi}.djvu"):
         print(f"page {pi} already exists, skipping...")
     else:
-        os.system(f"convert {fit} {es(page)} {T_DIR}/pbms/{pi}.{form}")
+        os.system(f'convert {fit} "{page}" {T_DIR}/pbms/{pi}.{form}')
         os.system(
             f"{tool} -dpi {DPI} {T_DIR}/pbms/{pi}.{form} {T_DIR}/pbms/{pi}.djvu")
     if CLEAN or not os.path.exists(f'{W_DIR}/{FILENAME}.djvu'):
@@ -173,7 +204,7 @@ if not args.justTOC:
             os.system(
                 f"djvm -i {W_DIR}/{FILENAME}.djvu {T_DIR}/pbms/{pi}.djvu")
             continue
-        os.system(f"convert {fit} {es(page)} {T_DIR}/pbms/{pi}.{form}")
+        os.system(f'convert {fit} "{page}" {T_DIR}/pbms/{pi}.{form}')
         os.system(
             f"{tool} -dpi {DPI} {T_DIR}/pbms/{pi}.{form} {T_DIR}/pbms/{pi}.djvu")
         if CLEAN or not os.path.exists(f'{W_DIR}/{FILENAME}.djvu'):
@@ -184,7 +215,8 @@ drawProgressBar(mx, mx, "Converted! ")
 print(" "*os.get_terminal_size().columns, end = "\r")
 #Writing table of contents into the file
 if args.detectTOC or args.justTOC:
-    os.system(f'djvused {W_DIR}/{FILENAME}.djvu -e "set-outline TOC.txt" -s')
+    if has_volumes or has_chapters:
+        os.system(f'djvused {W_DIR}/{FILENAME}.djvu -e "set-outline TOC.txt" -s')
 
 if CLEAN_AFT:
     print("Cleaning up...")
