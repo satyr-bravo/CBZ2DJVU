@@ -139,8 +139,8 @@ if args.detectTOC or args.justTOC:
     has_chapters = contains_any(PAGES_LIST[0], CH_NAMES)
     for pgi in range(len(PAGES_LIST)):  
         if not(has_volumes or has_chapters):
-            print("Unable to understand table of contents, sorry :(")
-            print("Launch the program again without TOC detection flag, please. Now exiting...")
+            print("Unable to figure out table of contents :(")
+            print("Please launch the program again without TOC detection flag. Now exiting...")
             exit()
         elif has_volumes and has_chapters:
             pgid = s_sub(PAGES_LIST[pgi], T_DIR).split("/")
@@ -173,12 +173,17 @@ if args.detectTOC or args.justTOC:
             toc = open("TOC.txt", 'w')
             toc.write("(bookmarks\n")
             if has_volumes and has_chapters:
+                print("Detected volumes and chapters structure")
                 for vol in TABLE.keys():
                     toc.write(f'\t("{vol}" "#{TABLE[vol][list(TABLE[vol].keys())[0]]}"\n')
                     for ch in TABLE[vol].keys():
                         toc.write(f'\t\t("{ch}" "#{TABLE[vol][ch]}")\n')
                     toc.write('\t)\n')
             elif has_volumes or has_chapters:
+                if has_chapters:
+                    print("Detected only chapters")
+                else:
+                    print("Detected only volumes")
                 for ps in TABLE.keys():
                     toc.write(f'\t("{ps}" "{TABLE[ps]}")\n')
             toc.write(')')
