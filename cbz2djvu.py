@@ -12,7 +12,7 @@ parser.add_argument('--dpi', type=int)
 parser.add_argument(
     '--gs', help='Convert all images to grayscale for smaller file size', action="store_true")    
 parser.add_argument(
-    '--bw', help='Convert all images to b&w bitmap for smallest file size', action="store_true")
+    '--clr', help='Keep color if you need it, biggest file size', action="store_true")
 parser.add_argument(
     '--detectTOC', help='attempt to detect volumes and chapters', action="store_true")
 parser.add_argument(
@@ -60,19 +60,19 @@ CLEAN = not args.nocleanup
 if args.justTOC:
     CLEAN = False
 
-if args.bw and args.gs:
-    print("B&w and grayscale conversion modes are mutually exclusive, please set flags properly")
+if args.clr and args.gs:
+    print("Color and grayscale conversion modes are mutually exclusive, please set flags properly")
     exit() 
 
-if args.bw:
-    form = 'pbm'
-    tool = 'cjb2 -clean'
+if args.clr:
+    form = 'ppm'
+    tool = 'c44'
 elif args.gs:
     form =  'pgm'
     tool = 'c44'
 else:
-    form = 'ppm'
-    tool = 'c44'
+    form = 'pbm'
+    tool = 'cjb2 -clean'
 
 
 if (args.dpi == None):
@@ -130,6 +130,7 @@ if args.detectTOC or args.justTOC:
         else:
             if ch not in TABLE[vol].keys():
                 TABLE[vol][ch] = pgi
+        drawProgressBar(pgi, len(PAGES_LIST), "Generating TOC ")
     os.system("touch TOC.txt")
     toc = open("TOC.txt", 'w')
     toc.write("(bookmarks\n")
@@ -142,7 +143,7 @@ if args.detectTOC or args.justTOC:
     toc.write(')')
     toc.close()
 
-
+mx = len(PAGES_LIST)
 if not args.justTOC:
     pi = 0
     page = PAGES_LIST[pi]
@@ -154,7 +155,6 @@ if not args.justTOC:
             f"{tool} -dpi {DPI} {T_DIR}/pbms/{pi}.{form} {T_DIR}/pbms/{pi}.djvu")
     if CLEAN or not os.path.exists(f'{W_DIR}/{FILENAME}.djvu'):
         os.system(f"djvm -c {W_DIR}/{FILENAME}.djvu {T_DIR}/pbms/{pi}.djvu")
-        mx = len(PAGES_LIST)
     for pi in range(1, len(PAGES_LIST)):
         page = PAGES_LIST[pi]
         if os.path.exists(f"{T_DIR}/pbms/{pi}.{form}"):
@@ -169,11 +169,10 @@ if not args.justTOC:
             os.system(
                 f"djvm -i {W_DIR}/{FILENAME}.djvu {T_DIR}/pbms/{pi}.djvu")
         drawProgressBar(pi, mx, "Converting pages ")
-
+drawProgressBar(mx, mx, "Converted! ")
 
 if args.detectTOC or args.justTOC:
     os.system(f'djvused {W_DIR}/{FILENAME}.djvu -e "set-outline TOC.txt" -s')
-
 
 print('\n')
 print("Done!")
