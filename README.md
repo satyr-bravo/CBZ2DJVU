@@ -8,18 +8,19 @@ A tool to convert CBZ comics to DJVU books for better reading experience on e-re
     - color  ~75% the size of CBZ (on average)
     - grayscale  ~60% 
     - b&w  ~10% 
+- Can scale images down to not be larger than screen size of a target device to achieve minimal file size
 - Can auto-detect volumes and chapters structure and write them as a table of contents (disabled by default, see [advanced usage](#advanced-usage))
 - Allows adjustment of DPI for converted document
 - May serve as a replacement for my old Manga2Djvu project
 
 ## Anti-features
-- Linux (and maybe bsd?) only
+- Linux only (untested but may work on bsd/macOS)
 - Ungodly slow
 - Does not clean up after itself
 
 ## Installation
 1. Download `cbz2djvu.py` and place it into any empty folder
-2. Install `unzip`, `djvulibre-bin` and `python3` dependencies if you don't have them
+2. Install `unzip`, `djvulibre-bin`, `imagemagick` and `python3` dependencies if you don't have them
 
 ## Usage
 1. Place your .cbz book into the folder you placed cbz2djvu script
@@ -29,15 +30,16 @@ A tool to convert CBZ comics to DJVU books for better reading experience on e-re
 5. FILENAME.djvu will be your converted comic, you can delete everything else if not needed
 
 ## Advanced usage
-|Flag           | What for                                                                                                          |
-|---------------|-------------------------------------------------------------------------------------------------------------------|
-|`-h`           | Displays help message                                                                                             |
-|`--dpi=DPI`    | Set DPI value for a final document                                                                                |
-|`--gs`         | Set document conversion mode to grayscale for smaller file size                                                   |
-|`-clr`         | Keep color data of images, produces largest size file                                                             |
-|`--detectTOC`  | Guess table of contents from the folder structure (very unstable, likely to crash, better to use "justTOC" flag)  |
-|`--justTOC`    | Guess table of contents and append it to the already made file without re-generating it                           |
-|`--nocleanup`  | Do not delete files from previous runs (likely to mess things up, use at your own risk)                           |
+|Flag           | What for                                                                                                              |
+|---------------|-----------------------------------------------------------------------------------------------------------------------|
+|`-h`           | Displays help message                                                                                                 |
+|`--dpi=DPI`    | Set DPI value for a final document                                                                                    |
+|`--gs`         | Set document conversion mode to grayscale for smaller file size                                                       |
+|`-clr`         | Keep color data of images, produces largest size file                                                                 |
+|`--detectTOC`  | Guess table of contents from the folder structure (very unstable, likely to crash, better to use "justTOC" flag)      |
+|`--justTOC`    | Guess table of contents and append it to the already made file without re-generating it                               |
+|`--nocleanup`  | Do not delete files from previous runs (likely to mess things up, use at your own risk)                               |
+|`--fitscreen`  | Scale images down to not be larger than screen size of a target device. Needs geometry input in `WIDTHxHEIGHT` format |
 
 ## TODO
 1. Improve table of contents detection 

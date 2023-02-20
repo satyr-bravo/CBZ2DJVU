@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('filename', help='cbz file you want to process')
 parser.add_argument('--dpi', type=int)
 parser.add_argument(
-    '--gs', help='Convert all images to grayscale for smaller file size', action="store_true")    
+    '--gs', help='Convert all images to grayscale for smaller file size', action="store_true")
 parser.add_argument(
     '--clr', help='Keep color if you need it, biggest file size', action="store_true")
 parser.add_argument(
@@ -19,10 +19,14 @@ parser.add_argument(
     '--nocleanup', help='disable file removal from previous runs', action="store_true")
 parser.add_argument(
     '--justTOC', help='attempt to add TOC to already existing books', action="store_true")
+parser.add_argument(
+    '--fitscreen', help="take target device's screen size in format WIDTHxHEIGHT, scales every image so that it'll fit. Normally used to shrink file size even further", type=str)
+parser.add_argument(
+    '--cleanafter', help='Delete all the temporary files afterwards', action="store_true")
 args = parser.parse_args()
 
-
-def drawProgressBar(cur, max, task=''):
+#function defenitions
+def drawProgressBar(cur, max, task=''): #Draw a progress bar with given task name, cur is a current position, max is maximum
     rat = cur/max
     col = os.get_terminal_size().columns
     bar_size = col - len(task) - len(str(max))*2 - 16
@@ -31,49 +35,44 @@ def drawProgressBar(cur, max, task=''):
     print(
         f'{task}[{("="*b)}{" "*a}] | {cur}/{max} | {100*rat:.2f}%', end="\r", flush=True)
 
-
-def s_sub(s1, s2):
+def s_sub(s1, s2): #"Substract" string s2 from s1
     return s1.replace(s2, '')
 
-
-def es(s):
+def es(s): #Auto-protect spaces
     return s.replace(' ', '\ ')
 
+def sort_nicely(l): #Sort a list of filenames in a human way
+    def tryint(s):
+        try:
+            return int(s)
+        except:
+            return s
+    def alphanum_key(s):
+        return [tryint(c) for c in re.split('([0-9]+)', s)]
 
-def tryint(s):
-    try:
-        return int(s)
-    except:
-        return s
-
-
-def alphanum_key(s):
-    return [tryint(c) for c in re.split('([0-9]+)', s)]
-
-
-def sort_nicely(l):
     l.sort(key=alphanum_key)
 
-
+#Parsing arguments and setting variables accordingly
 FILENAME = s_sub(args.filename, '.cbz')
+
 CLEAN = not args.nocleanup
+CLEAN_AFT =  args.cleanafter
 if args.justTOC:
     CLEAN = False
 
 if args.clr and args.gs:
     print("Color and grayscale conversion modes are mutually exclusive, please set flags properly")
-    exit() 
+    exit()
 
 if args.clr:
     form = 'ppm'
     tool = 'c44'
 elif args.gs:
-    form =  'pgm'
+    form = 'pgm'
     tool = 'c44'
 else:
     form = 'pbm'
     tool = 'cjb2 -clean'
-
 
 if (args.dpi == None):
     DPI = 212
@@ -82,6 +81,12 @@ else:
         print("DPI value should be in range from 25 to 1200")
         exit()
     DPI = args.dpi
+
+if args.fitscreen != None:
+    fit = "-filter triangle -resize "+ args.fitscreen + "\>"
+else:
+    fit = ''
+
 if not CLEAN:
     print("Cleanup disabled. This may lead to unpredicted errors")
 W_DIR = os.getcwd()
@@ -90,21 +95,25 @@ DEPS = ['convert', 'djvm', 'cjb2', 'unzip', 'c44']
 PAGES_LIST = []
 PBMS_LIST = []
 
-print("Checking dependencies...")
+#Checking if all needed dependencies are set
+print("Checking dependencies...", end = "\r")
 for d in DEPS:
     if subprocess.run(f"which {d}", shell=True, capture_output=True).returncode != 0:
         print(
-            f"You are missing {d}! Please install it, or the program will not be able to do its job.")
+            f"Couldn't fing {d} dependency! Unable to proceed further, exiting...")
         exit()
-print("All dependencies checked, should be ok to proceed")
+print(" "*os.get_terminal_size().columns, end = "\r")
+print("Dependencies OK")
 
+#cleaning up workspace from previous runs
 if CLEAN:
     shutil.rmtree(T_DIR, ignore_errors=True)
     os.mkdir(T_DIR)
-    print("temp directory created")
-    print("Extracting file...")
+    print("Temporary directory created")
+    print("Extracting file...", end = "\r")
     os.system(f"unzip -qq {FILENAME}.cbz -d {T_DIR}")
-    print("Extracted")
+    print(" "*os.get_terminal_size().columns, end = "\r")
+    print("File extracted")
     if os.path.exists(f"{T_DIR}/pbms"):
         shutil.rmtree(f"{T_DIR}/pbms")
     os.mkdir(f"{T_DIR}/pbms")
@@ -116,6 +125,7 @@ for dirname, dirnames, filenames in os.walk(T_DIR):
         PAGES_LIST.append(os.path.join(dirname, filename))
 sort_nicely(PAGES_LIST)
 
+#Detecting and generating table of contents
 if args.detectTOC or args.justTOC:
     TABLE = {}
     for pgi in range(len(PAGES_LIST)):
@@ -143,6 +153,7 @@ if args.detectTOC or args.justTOC:
     toc.write(')')
     toc.close()
 
+#Main conversion cycle
 mx = len(PAGES_LIST)
 if not args.justTOC:
     pi = 0
@@ -150,7 +161,7 @@ if not args.justTOC:
     if os.path.exists(f"{T_DIR}/pbms/{pi}.djvu"):
         print(f"page {pi} already exists, skipping...")
     else:
-        os.system(f"convert {es(page)} {T_DIR}/pbms/{pi}.{form}")
+        os.system(f"convert {fit} {es(page)} {T_DIR}/pbms/{pi}.{form}")
         os.system(
             f"{tool} -dpi {DPI} {T_DIR}/pbms/{pi}.{form} {T_DIR}/pbms/{pi}.djvu")
     if CLEAN or not os.path.exists(f'{W_DIR}/{FILENAME}.djvu'):
@@ -162,7 +173,7 @@ if not args.justTOC:
             os.system(
                 f"djvm -i {W_DIR}/{FILENAME}.djvu {T_DIR}/pbms/{pi}.djvu")
             continue
-        os.system(f"convert {es(page)} {T_DIR}/pbms/{pi}.{form}")
+        os.system(f"convert {fit} {es(page)} {T_DIR}/pbms/{pi}.{form}")
         os.system(
             f"{tool} -dpi {DPI} {T_DIR}/pbms/{pi}.{form} {T_DIR}/pbms/{pi}.djvu")
         if CLEAN or not os.path.exists(f'{W_DIR}/{FILENAME}.djvu'):
@@ -170,9 +181,16 @@ if not args.justTOC:
                 f"djvm -i {W_DIR}/{FILENAME}.djvu {T_DIR}/pbms/{pi}.djvu")
         drawProgressBar(pi, mx, "Converting pages ")
 drawProgressBar(mx, mx, "Converted! ")
-
+print(" "*os.get_terminal_size().columns, end = "\r")
+#Writing table of contents into the file
 if args.detectTOC or args.justTOC:
     os.system(f'djvused {W_DIR}/{FILENAME}.djvu -e "set-outline TOC.txt" -s')
 
-print('\n')
+if CLEAN_AFT:
+    print("Cleaning up...")
+    shutil.rmtree(T_DIR, ignore_errors=True)
+    os.system('rm TOC.txt')
+    print(" "*os.get_terminal_size().columns, end = "\r")
+    print("Temporary files removed")
+
 print("Done!")
